@@ -5,12 +5,11 @@
         @after-enter="onAfterEnter"
         @before-leave="onBeforeLeave"
         @leave="onLeave"
+        mode="in-out"
         :css="false"
     >
-        <div v-show="props.open" class="content">
-            <div>
-                <slot />
-            </div>
+        <div v-show="props.open">
+            <slot />
         </div>
     </transition>
 </template>
@@ -22,6 +21,11 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+
+    duration: {
+        type: Number,
+        default: 250
+    }
 })
 
 const onBeforeEnter = (el: Element): void => {
@@ -32,16 +36,15 @@ const onBeforeEnter = (el: Element): void => {
 }
 
 const onEnter = (el: Element, done: () => void): void => {
-    const duration = 250
-
     el.setAttribute(
         'style',
-        `max-height: ${el.scrollHeight}px; opacity: 1; overflow: hidden;`
+        `max-height: ${el.scrollHeight}px; opacity: 1; overflow: hidden; transition: ${props.duration/1000}s linear;`
     )
+
     setTimeout(() => {
         el.setAttribute('style', '')
         done() 
-    }, duration)
+    }, props.duration)
 }
 
 const onAfterEnter = (el: Element): void => {
@@ -59,24 +62,17 @@ const onBeforeLeave = (el: Element): void => {
 }
 
 const onLeave = (el: Element, done: () => void): void => {
-    const duration = parseFloat(getComputedStyle(el).transitionDuration) * 1000 || 250
+    const test = getComputedStyle(el).willChange
+    console.log('duration 1 ', test)
 
     el.setAttribute(
         'style',
-        'max-height: 0; overflow: hidden;'
+        `max-height: 0; opacity: 0; overflow: hidden; transition: ${props.duration/1000}s linear;`
     )
 
     setTimeout(() => {
         el.setAttribute('style', '')
         done()
-    }, duration)
+    }, props.duration)
 }
 </script>
-
-<style>
-.content {
-    will-change: contents;
-    transition: 0.25s linear;
-
-}
-</style>
