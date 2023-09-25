@@ -2,9 +2,9 @@
     <transition
         @before-enter="onBeforeEnter"
         @enter="onEnter"
-        @after-enter="onAfterEnter"
         @before-leave="onBeforeLeave"
         @leave="onLeave"
+        appear
         mode="in-out"
         :css="false"
     >
@@ -16,6 +16,11 @@
 
 <script setup lang="ts">
 
+type ElementStyles = {
+    duration: number,
+    timingFn: string
+}
+
 const props = defineProps({
     open: {
         type: Boolean,
@@ -25,20 +30,20 @@ const props = defineProps({
     duration: {
         type: Number,
         default: 250
-    }
+    },
 })
 
 const onBeforeEnter = (el: Element): void => {
     el.setAttribute(
         'style',
-        'max-height: 0; opacity: 0; overflow: hidden;'
+        getElementStyles(el)
     )
 }
 
 const onEnter = (el: Element, done: () => void): void => {
     el.setAttribute(
         'style',
-        `max-height: ${el.scrollHeight}px; opacity: 1; overflow: hidden; transition: ${props.duration/1000}s linear;`
+        getElementStyles(el, true)
     )
 
     setTimeout(() => {
@@ -47,32 +52,48 @@ const onEnter = (el: Element, done: () => void): void => {
     }, props.duration)
 }
 
-const onAfterEnter = (el: Element): void => {
-    el.setAttribute(
-        'style',
-        ''
-    )
-}
-
 const onBeforeLeave = (el: Element): void => {
+    const styles = getElementStyles(el, true)
+
     el.setAttribute(
         'style',
-        `max-height: ${el.clientHeight}px; opacity: 1; overflow: hidden;`
+        styles
     )
 }
 
 const onLeave = (el: Element, done: () => void): void => {
-    const test = getComputedStyle(el).willChange
-    console.log('duration 1 ', test)
-
-    el.setAttribute(
-        'style',
-        `max-height: 0; opacity: 0; overflow: hidden; transition: ${props.duration/1000}s linear;`
-    )
+    requestAnimationFrame(() => {
+        el.setAttribute(
+            'style',
+            getElementStyles(el)
+        )
+    })
 
     setTimeout(() => {
         el.setAttribute('style', '')
         done()
     }, props.duration)
+}
+
+const getTtransitionParams = (el: Element): ElementStyles => {
+    const elementStyles = getComputedStyle(el)
+    
+    return {
+        duration: props.duration / 1000,
+        timingFn: elementStyles.transitionTimingFunction || 'linear'
+    }
+}
+
+const getElementStyles = (el: Element, open: Boolean = false) => {
+    const { duration, timingFn } = getTtransitionParams(el)
+    const maxHeight = open ? `${el.scrollHeight}px` : 0
+    const opacity = open ? 1 : 0
+
+    return `
+        max-height: ${maxHeight};
+        opacity: ${opacity};
+        overflow: hidden;
+        transition: ${duration}s ${timingFn};
+    `
 }
 </script>
