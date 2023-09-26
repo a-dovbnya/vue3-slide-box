@@ -4,22 +4,16 @@
         @enter="onEnter"
         @before-leave="onBeforeLeave"
         @leave="onLeave"
-        appear
         mode="in-out"
         :css="false"
     >
-        <div v-show="props.open">
+        <div v-if="props.open">
             <slot />
         </div>
     </transition>
 </template>
 
 <script setup lang="ts">
-
-type ElementStyles = {
-    duration: number,
-    timingFn: string
-}
 
 const props = defineProps({
     open: {
@@ -31,6 +25,16 @@ const props = defineProps({
         type: Number,
         default: 250
     },
+
+    timingFn: {
+        type: String,
+        default: 'linear'
+    },
+
+    opacityAnimate: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const onBeforeEnter = (el: Element): void => {
@@ -53,11 +57,9 @@ const onEnter = (el: Element, done: () => void): void => {
 }
 
 const onBeforeLeave = (el: Element): void => {
-    const styles = getElementStyles(el, true)
-
     el.setAttribute(
         'style',
-        styles
+        getElementStyles(el, true)
     )
 }
 
@@ -75,25 +77,17 @@ const onLeave = (el: Element, done: () => void): void => {
     }, props.duration)
 }
 
-const getTtransitionParams = (el: Element): ElementStyles => {
-    const elementStyles = getComputedStyle(el)
-    
-    return {
-        duration: props.duration / 1000,
-        timingFn: elementStyles.transitionTimingFunction || 'linear'
-    }
-}
-
 const getElementStyles = (el: Element, open: Boolean = false) => {
-    const { duration, timingFn } = getTtransitionParams(el)
     const maxHeight = open ? `${el.scrollHeight}px` : 0
-    const opacity = open ? 1 : 0
+    const transitionParams = `${props.duration / 1000}s ${props.timingFn}`
+    let transitionValue = `max-height ${transitionParams}`
+    let opacity = ''
 
-    return `
-        max-height: ${maxHeight};
-        opacity: ${opacity};
-        overflow: hidden;
-        transition: ${duration}s ${timingFn};
-    `
+    if (props.opacityAnimate) {
+        transitionValue += `, opacity ${transitionParams}`
+        opacity = `opacity: ${open ? 1 : 0};`
+    }
+
+    return `max-height: ${maxHeight}; overflow: hidden; transition: ${transitionValue}; ${opacity}`
 }
 </script>
